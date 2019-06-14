@@ -615,6 +615,10 @@ struct fuse_lowlevel_ops {
 	void (*readdir) (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 			 struct fuse_file_info *fi);
 
+        void (*readdir_plus)(fuse_req_t req, fuse_ino_t ino,
+                             size_t size, off_t off,
+                             struct fuse_file_info *ffi);
+
 	/**
 	 * Release an open directory
 	 *
@@ -1301,6 +1305,13 @@ int fuse_reply_bmap(fuse_req_t req, uint64_t idx);
 size_t fuse_add_direntry(fuse_req_t req, char *buf, size_t bufsize,
 			 const char *name, const struct stat *stbuf,
 			 off_t off);
+
+size_t fuse_add_direntry_plus(fuse_req_t                    *req,
+                              char                          *buf,
+                              size_t                         bufsize,
+                              const char                    *name,
+                              const struct fuse_entry_param *e,
+                              off_t                          off);
 
 /**
  * Reply to ask for data fetch and output buffer preparation.  ioctl

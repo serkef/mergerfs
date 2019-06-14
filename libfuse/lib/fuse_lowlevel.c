@@ -342,6 +342,39 @@ static void fill_entry(struct fuse_entry_out *arg,
 	convert_stat(&e->attr, &arg->attr);
 }
 
+size_t
+fuse_add_direntry_plus(fuse_req_t                    *req_,
+                       char                          *buf_,
+                       size_t                         bufsize_,
+                       const char                    *name_,
+                       const struct fuse_entry_param *e_,
+                       off_t                          off_)
+{
+  size_t namelen;
+  size_t entlen;
+  size_t entlen_padded;
+
+  namelen       = strlen(name_);
+  entlen        = FUSE_NAME_OFFSET_DIRENTPLUS + namelen;
+  entlen_padded = FUSE_DIRENT_ALIGN(entlen);
+  if((buf_ == NULL) || (entlen_padded > bufsize_))
+    return entlen_padded;
+
+  struct fuse_direntplus *dp = (struct fuse_direntplus *)buf_;
+  memset(&dp->entry_out, 0, sizeof(dp->entry_out));
+  fill_entry(&dp->entry_out, e_);
+
+  struct fuse_dirent *dirent = &dp->dirent;
+  dirent->ino = e_->attr.st_ino;
+  dirent->off = off_;
+  dirent->namelen = namelen;
+  dirent->type = (e_->attr.st_mode & S_IFMT) >> 12;
+  strncpy(dirent->name, name_, namelen);
+  memset(dirent->name + namelen, 0, entlen_padded - entlen);
+
+  return entlen_padded;
+}
+
 static void fill_open(struct fuse_open_out *arg,
 		      const struct fuse_file_info *f)
 {
@@ -1390,6 +1423,24 @@ static void do_readdir(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 		fuse_reply_err(req, ENOSYS);
 }
 
+static
+void
+do_readdir_plus(fuse_req_t  req_,
+                fuse_ino_t  nodeid_,
+                const void *inarg_)
+{
+  const struct fuse_read_in *arg;
+  struct fuse_file_info ffi = {0};
+
+  arg    = (struct fuse_read_in*)inarg_;
+  ffi.fh = arg->fh;
+
+  if(req_->f->op.readdir_plus)
+    req_->f->op.readdir_plus(req_,nodeid_,arg->size,arg->offset,&ffi);
+  else
+    fuse_reply_err(req_,ENOSYS);
+}
+
 static void do_releasedir(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 {
 	struct fuse_release_in *arg = (struct fuse_release_in *) inarg;
@@ -1794,6 +1845,10 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
                         f->conn.capable |= FUSE_CAP_PARALLEL_DIROPS;
                 if (arg->flags & FUSE_MAX_PAGES)
                         f->conn.capable |= FUSE_CAP_MAX_PAGES;
+                if (arg->flags & FUSE_DO_READDIRPLUS)
+                        f->conn.capable |= FUSE_CAP_READDIR_PLUS;
+                if (arg->flags & FUSE_READDIRPLUS_AUTO)
+                        f->conn.capable |= FUSE_CAP_READDIR_PLUS_AUTO;
 	} else {
                 f->conn.want &= ~FUSE_CAP_ASYNC_READ;
 		f->conn.max_readahead = 0;
@@ -1870,6 +1925,10 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
                 outarg.flags |= FUSE_ASYNC_DIO;
         if (f->conn.want & FUSE_CAP_PARALLEL_DIROPS)
                 outarg.flags |= FUSE_PARALLEL_DIROPS;
+        if (f->conn.want & FUSE_CAP_READDIR_PLUS)
+                outarg.flags |= FUSE_DO_READDIRPLUS;
+        if (f->conn.want & FUSE_CAP_READDIR_PLUS_AUTO)
+                outarg.flags |= FUSE_READDIRPLUS_AUTO;
 	outarg.max_readahead = f->conn.max_readahead;
 	outarg.max_write = f->conn.max_write;
 	if (f->conn.proto_minor >= 13) {
@@ -2325,6 +2384,7 @@ static struct {
     [FUSE_INIT]            = { do_init,	           "INIT"	     },
     [FUSE_OPENDIR]         = { do_opendir,         "OPENDIR"         },
     [FUSE_READDIR]         = { do_readdir,         "READDIR"         },
+    [FUSE_READDIRPLUS]     = { do_readdir_plus,    "READDIR_PLUS"    },
     [FUSE_RELEASEDIR]      = { do_releasedir,      "RELEASEDIR"      },
     [FUSE_FSYNCDIR]        = { do_fsyncdir,        "FSYNCDIR"        },
     [FUSE_GETLK]           = { do_getlk,           "GETLK"	     },
@@ -2444,13 +2504,20 @@ static void fuse_ll_process_buf(void *data, const struct fuse_buf *buf,
 		goto reply_err;
 
 	err = EACCES;
-	if (f->allow_root && in->uid != f->owner && in->uid != 0 &&
-		 in->opcode != FUSE_INIT && in->opcode != FUSE_READ &&
-		 in->opcode != FUSE_WRITE && in->opcode != FUSE_FSYNC &&
-		 in->opcode != FUSE_RELEASE && in->opcode != FUSE_READDIR &&
-		 in->opcode != FUSE_FSYNCDIR && in->opcode != FUSE_RELEASEDIR &&
-		 in->opcode != FUSE_NOTIFY_REPLY)
-		goto reply_err;
+	if (f->allow_root                  &&
+            in->uid    != f->owner         &&
+            in->uid    != 0                &&
+            in->opcode != FUSE_INIT        &&
+            in->opcode != FUSE_READ        &&
+            in->opcode != FUSE_WRITE       &&
+            in->opcode != FUSE_FSYNC       &&
+            in->opcode != FUSE_RELEASE     &&
+            in->opcode != FUSE_READDIR     &&
+            in->opcode != FUSE_READDIRPLUS &&
+            in->opcode != FUSE_FSYNCDIR    &&
+            in->opcode != FUSE_RELEASEDIR  &&
+            in->opcode != FUSE_NOTIFY_REPLY)
+          goto reply_err;
 
 	err = ENOSYS;
 	if (in->opcode >= FUSE_MAXOP || !fuse_ll_ops[in->opcode].func)
