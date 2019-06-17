@@ -315,6 +315,12 @@ struct fuse_operations {
 	int (*readdir) (const char *, void *, fuse_fill_dir_t, off_t,
 			struct fuse_file_info *);
 
+	int (*readdir_plus)(const char *,
+                            void *,
+                            fuse_fill_dir_t,
+                            off_t,
+                            struct fuse_file_info *);
+
 	/** Release directory
 	 *
 	 * Introduced in version 2.3
