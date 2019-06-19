@@ -1943,7 +1943,7 @@ fuse_fs_readdir_plus(struct fuse_fs        *fs_,
                      off_t                  off_,
                      struct fuse_file_info *ffi_)
 {
-  if(fs->op.readdir_plus == NULL)
+  if(fs_->op.readdir_plus == NULL)
     return -ENOSYS;
 
   fuse_get_context()->private_data = fs_->user_data;
@@ -3459,73 +3459,6 @@ dot_or_dotdot(const char *s_)
           ((s_[1] == '\0') ||
            ((s_[1] == '.') && (s_[2] == '\0'))));
 }
-
-static
-int
-fill_dir_plus(void              *dh_,
-              const char        *name_,
-              const struct stat *st_,
-              off_t              off_)
-{
-  int rv;
-  struct fuse *f;
-  struct fuse_dh *dh;
-  struct fuse_entry_param e;
-
-  dh = (struct fuse_dh*)dh_;
-  f  = dh->fuse;
-
-  if(off_ && st_)
-    {
-      e.attr = *st_;
-      if(!dot_or_dotdot(name_))
-        {
-          rv = do_lookup(f_,dh->nodeid,name_,&e);
-          if(rv)
-            return (dh->error = rv,1);
-        }
-      else
-        {
-          e.attr.st_ino = FUSE_UNKNOWN_INO;
-          if(!f->conf.use_ino && f->conf.readdir_ino)
-            e.attr.st_ino = (ino_t)lookup_nodeid(f,dh->nodeid,name_);
-        }
-    }
-
-  if(off_)
-    {
-      size_t newlen;
-
-      if(dh->filled || dh->first)
-        return (dh->error = -EIO,1);
-
-      rv = extend_contents(dh,dh->needlen);
-      if(rv == -1)
-        return 1;
-
-      newlen = dh->len + fuse_add_direntry_plus(dh->req,
-                                                dh->contents + dh->len,
-                                                dh->needlen - dh->len,
-                                                name_,
-                                                &e_,
-                                                off_);
-      if(newlen > dh->needlen)
-        return 1;
-
-      dh->len = newlen;
-    }
-  else
-    {
-      dh->filled = 1;
-
-      rv = fuse_add_direntry_to_dh(dh,name_,&e.attr);
-      if(rv == -1)
-        return 1;
-    }
-
-  return 0;
-}
-
 
 static int readdir_fill(struct fuse *f, fuse_req_t req, fuse_ino_t ino,
 			size_t size, off_t off, struct fuse_dh *dh,
