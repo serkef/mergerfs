@@ -84,7 +84,7 @@ namespace l
 
             fs::inode::recompute(&st);
 
-            rv = fuse_dirents_add((fuse_dirents_t*)buf_,de);
+            rv = ::fuse_dirents_add((fuse_dirents_t*)buf_,de);
 
             //rv = filler_(buf_,de->d_name,&st,NO_OFFSET);
             if(rv)

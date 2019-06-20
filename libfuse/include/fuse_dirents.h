@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "DG_dynarr.h"
 
 #include <dirent.h>
@@ -21,3 +25,7 @@ void fuse_dirents_free(fuse_dirents_t *d);
 int  fuse_dirents_add(fuse_dirents_t *d,
                       struct dirent  *de);
 void fuse_dirents_reset(fuse_dirents_t *d);
+
+#ifdef __cplusplus
+}
+#endif

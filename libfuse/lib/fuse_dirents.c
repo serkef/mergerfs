@@ -19,6 +19,7 @@ struct fuse_dirent_s
   char     name[];
 };
 
+
 static
 uint64_t
 align_uint64_t(uint64_t v_)
