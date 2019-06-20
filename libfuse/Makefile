@@ -13,7 +13,7 @@ SBINDIR = "/sbin"
 SRC   = \
 	lib/buffer.c \
 	lib/cuse_lowlevel.c \
-	lib/dirents.c \
+	lib/fuse_dirents.c \
 	lib/fuse.c \
 	lib/fuse_kern_chan.c \
 	lib/fuse_loop.c \

@@ -1,6 +1,7 @@
 #define _FILE_OFFSET_BITS 64
+#define DG_DYNARR_IMPLEMENTATION
 
-#include "dirents.h"
+#include "fuse_dirents.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -91,8 +92,10 @@ fuse_dirents_add(fuse_dirents_t *d_,
   d->off = dirent_->d_off;
   d->namelen = namelen - 1;
   d->type = dirent_->d_type;
-  memcpy(d->name,dirent_->d_name,namelen);
+  memcpy(d->name,dirent_->d_name,namelen-1);
   d->name[namelen] = '\0';
+
+  da_push(d_->idxs,((char*)d - (char*)d_->buf));
 
   return 0;
 }
@@ -109,6 +112,8 @@ fuse_dirents_init(fuse_dirents_t *d_)
   d_->buf      = NULL;
   d_->buf_len  = 0;
   d_->data_len = 0;
+
+  da_init(d_->idxs);
 }
 
 void
@@ -117,4 +122,6 @@ fuse_dirents_free(fuse_dirents_t *d_)
   d_->buf_len  = 0;
   d_->data_len = 0;
   free(d_->buf);
+
+  da_free(d_->idxs);
 }

@@ -32,6 +32,7 @@
 #include "ugid.hpp"
 
 #include <fuse.h>
+#include <fuse_dirents.h>
 
 #include <string>
 #include <vector>
@@ -83,7 +84,9 @@ namespace l
 
             fs::inode::recompute(&st);
 
-            rv = filler_(buf_,de->d_name,&st,NO_OFFSET);
+            rv = fuse_dirents_add((fuse_dirents_t*)buf_,de);
+
+            //rv = filler_(buf_,de->d_name,&st,NO_OFFSET);
             if(rv)
               return (fs::closedir(dh),-ENOMEM);
           }

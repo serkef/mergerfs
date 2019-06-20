@@ -18,7 +18,7 @@
 #include "fuse_common_compat.h"
 #include "fuse_compat.h"
 #include "fuse_kernel.h"
-#include "dirents.h"
+#include "fuse_dirents.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -195,6 +195,7 @@ struct fuse_dh {
 	uint64_t fh;
 	int error;
 	fuse_ino_t nodeid;
+  fuse_dirents_t d;
 };
 
 /* old dir handle */
@@ -3344,6 +3345,7 @@ static void fuse_lib_opendir(fuse_req_t req, fuse_ino_t ino,
 	dh->len = 0;
 	dh->filled = 0;
 	dh->nodeid = ino;
+        fuse_dirents_init(&dh->d);
 	fuse_mutex_init(&dh->lock);
 
 	llfi->fh = (uintptr_t) dh;
@@ -3481,7 +3483,7 @@ static int readdir_fill(struct fuse *f, fuse_req_t req, fuse_ino_t ino,
 		dh->filled = 1;
 		dh->req = req;
 		fuse_prepare_interrupt(f, req, &d);
-		err = fuse_fs_readdir(f->fs, path, dh, fill_dir, off, fi);
+		err = fuse_fs_readdir(f->fs, path, &dh->d, fill_dir, off, fi);
 		fuse_finish_interrupt(f, req, &d);
 		dh->req = NULL;
 		if (!err)
@@ -3553,6 +3555,7 @@ static void fuse_lib_releasedir(fuse_req_t req, fuse_ino_t ino,
 	pthread_mutex_unlock(&dh->lock);
 	pthread_mutex_destroy(&dh->lock);
 	free(dh->contents);
+        fuse_dirents_free(&dh->d);
 	free(dh);
 	reply_err(req, 0);
 }
