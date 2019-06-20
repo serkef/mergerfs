@@ -18,6 +18,7 @@
 #include "fuse_common_compat.h"
 #include "fuse_compat.h"
 #include "fuse_kernel.h"
+#include "dirents.h"
 
 #include <stdio.h>
 #include <string.h>
