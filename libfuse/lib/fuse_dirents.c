@@ -82,13 +82,13 @@ fuse_dirents_add(fuse_dirents_t *d_,
   if(d == NULL)
     return -ENOMEM;
 
+  d_->data_len += size;
+
   d->ino     = dirent_->d_ino;
-  d->off     = ((char*)d - (char*)d_->buf);
+  d->off     = d_->data_len;
   d->namelen = namelen;
   d->type    = dirent_->d_type;
   memcpy(d->name,dirent_->d_name,namelen);
-
-  d_->data_len += size;
 
   return 0;
 }
@@ -131,7 +131,17 @@ fuse_dirents_fprintf(fuse_dirents_t *d_,
   d = d_->buf;
   while(d < (d_->buf + d_->buf_len))
     {
-      fprintf(stderr,"%.*s\n",d->namelen,d->name);
+      fprintf(stderr,
+              "ino: %d "
+              "off: %d "
+              "len: %d "
+              "typ: %d "
+              "%.*s\n",
+              d->ino,
+              d->off,
+              d->namelen,
+              d->type,
+              d->namelen,d->name);
       d = ((char*)d + align_uint64_t(sizeof(fuse_dirent_t) + d->namelen));
     }
 }
