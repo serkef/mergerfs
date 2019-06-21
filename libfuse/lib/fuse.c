@@ -3498,36 +3498,36 @@ static int readdir_fill(struct fuse *f, fuse_req_t req, fuse_ino_t ino,
 static void fuse_lib_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 			     off_t off, struct fuse_file_info *llfi)
 {
-	struct fuse *f = req_fuse_prepare(req);
-	struct fuse_file_info fi;
-	struct fuse_dh *dh = get_dirhandle(llfi, &fi);
+  int rv;
+  struct fuse *f = req_fuse_prepare(req);
+  struct fuse_file_info fi;
+  struct fuse_dh *dh = get_dirhandle(llfi, &fi);
 
-	pthread_mutex_lock(&dh->lock);
-	/* According to SUS, directory contents need to be refreshed on
-	   rewinddir() */
-	if (!off)
-		dh->filled = 0;
+  pthread_mutex_lock(&dh->lock);
 
-	if (!dh->filled) {
-		int err = readdir_fill(f, req, ino, size, off, dh, &fi);
-		if (err) {
-			reply_err(req, err);
-			goto out;
-		}
-	}
-	if (dh->filled) {
-		if (off < dh->len) {
-			if (off + size > dh->len)
-				size = dh->len - off;
-		} else
-			size = 0;
-	} else {
-		size = dh->len;
-		off = 0;
-	}
-	fuse_reply_buf(req, dh->contents + off, size);
-out:
-	pthread_mutex_unlock(&dh->lock);
+  rv = 0;
+  if(off == 0)
+    rv = readdir_fill(f, req, ino, size, off, dh, &fi);
+
+  if(rv)
+    {
+      reply_err(req, rv);
+      goto out;
+    }
+
+  if(off >= dh->d.data_len)
+    size = 0;
+  else if(off + size > dh->d.data_len)
+    size = dh->d.data_len - off;
+
+  fprintf(stderr,"%d %d %d\n",off,dh->d.data_len,size);
+
+  fuse_reply_buf(req,
+                 dh->d.buf + off,
+                 size);
+
+ out:
+  pthread_mutex_unlock(&dh->lock);
 }
 
 static void fuse_lib_releasedir(fuse_req_t req, fuse_ino_t ino,
