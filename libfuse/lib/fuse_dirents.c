@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEFAULT_SIZE 4096
+
 typedef struct fuse_dirent_s fuse_dirent_t;
 struct fuse_dirent_s
 {
@@ -36,12 +38,12 @@ fuse_dirents_resize(fuse_dirents_t *d_,
 
   if(d_->buf_len < (size_ + d_->data_len))
     {
-      p = realloc(d_->buf,(size_ + d_->buf_len));
+      p = realloc(d_->buf,(d_->buf_len * 2));
       if(p == NULL)
         return -errno;
 
       d_->buf      = p;
-      d_->buf_len += size_;
+      d_->buf_len *= 2;
     }
 
   return 0;
@@ -99,12 +101,20 @@ fuse_dirents_reset(fuse_dirents_t *d_)
   d_->data_len = 0;
 }
 
-void
+int
 fuse_dirents_init(fuse_dirents_t *d_)
 {
-  d_->buf      = NULL;
-  d_->buf_len  = 0;
+  void *buf;
+
+  buf = malloc(DEFAULT_SIZE);
+  if(buf == NULL)
+    return -ENOMEM;
+
+  d_->buf      = buf;
+  d_->buf_len  = DEFAULT_SIZE;
   d_->data_len = 0;
+
+  return 0;
 }
 
 void
@@ -113,35 +123,4 @@ fuse_dirents_free(fuse_dirents_t *d_)
   d_->buf_len  = 0;
   d_->data_len = 0;
   free(d_->buf);
-}
-
-fuse_dirent_t*
-fuse_dirents_next(fuse_dirents_t *dirents_,
-                  fuse_dirent_t  *dirent_)
-{
-  return NULL;
-}
-
-void
-fuse_dirents_fprintf(fuse_dirents_t *d_,
-                     FILE           *f_)
-{
-  fuse_dirent_t *d;
-
-  d = d_->buf;
-  while(d < (d_->buf + d_->buf_len))
-    {
-      fprintf(stderr,
-              "ino: %d "
-              "off: %d "
-              "len: %d "
-              "typ: %d "
-              "%.*s\n",
-              d->ino,
-              d->off,
-              d->namelen,
-              d->type,
-              d->namelen,d->name);
-      d = (void*)((char*)d + align_uint64_t(sizeof(fuse_dirent_t) + d->namelen));
-    }
 }
