@@ -142,6 +142,6 @@ fuse_dirents_fprintf(fuse_dirents_t *d_,
               d->namelen,
               d->type,
               d->namelen,d->name);
-      d = ((char*)d + align_uint64_t(sizeof(fuse_dirent_t) + d->namelen));
+      d = (void*)((char*)d + align_uint64_t(sizeof(fuse_dirent_t) + d->namelen));
     }
 }
