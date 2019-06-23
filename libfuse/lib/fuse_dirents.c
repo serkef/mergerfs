@@ -36,7 +36,7 @@ fuse_dirents_resize(fuse_dirents_t *d_,
 {
   void *p;
 
-  if(d_->buf_len < (size_ + d_->data_len))
+  if((d_->data_len + size_) >= d_->buf_len)
     {
       p = realloc(d_->buf,(d_->buf_len * 2));
       if(p == NULL)
@@ -55,16 +55,15 @@ fuse_dirents_alloc(fuse_dirents_t *d_,
                    uint64_t        size_)
 {
   int rv;
-  char *p;
   fuse_dirent_t *d;
 
   rv = fuse_dirents_resize(d_,size_);
   if(rv)
     return NULL;
 
-  p  = d_->buf;
-  p += d_->data_len;
-  d = (fuse_dirent_t*)p;
+  d = (fuse_dirent_t*)&d_->buf[d_->data_len];
+
+  d_->data_len += size_;
 
   return d;
 }
@@ -83,8 +82,6 @@ fuse_dirents_add(fuse_dirents_t *d_,
   d = fuse_dirents_alloc(d_,size);
   if(d == NULL)
     return -ENOMEM;
-
-  d_->data_len += size;
 
   d->ino     = dirent_->d_ino;
   d->off     = d_->data_len;

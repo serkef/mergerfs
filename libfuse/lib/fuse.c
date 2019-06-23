@@ -3515,13 +3515,13 @@ static void fuse_lib_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
       goto out;
     }
 
-  if(off >= dh->d.buf_len)
+  if(off >= dh->d.data_len)
     size = 0;
-  else if((off + size) > dh->d.buf_len)
-    size = (dh->d.buf_len - off);
+  else if((off + size) > dh->d.data_len)
+    size = (dh->d.data_len - off);
 
   fuse_reply_buf(req,
-                 dh->d.buf + off,
+                 &dh->d.buf[off],
                  size);
 
  out:
