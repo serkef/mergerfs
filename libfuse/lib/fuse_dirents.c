@@ -1,6 +1,10 @@
 #define _FILE_OFFSET_BITS 64
 
+#include "fuse_attr.h"
+#include "fuse_entry.h"
+#include "fuse_dirent.h"
 #include "fuse_dirents.h"
+#include "stat_utils.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -11,16 +15,7 @@
 
 #define DEFAULT_SIZE 4096
 
-typedef struct fuse_dirent_s fuse_dirent_t;
-struct fuse_dirent_s
-{
-  uint64_t ino;
-  uint64_t off;
-  uint32_t namelen;
-  uint32_t type;
-  char     name[];
-};
-
+typedef struct fuse_direntplus fuse_direntplus_t;
 
 static
 uint64_t
@@ -68,6 +63,28 @@ fuse_dirents_alloc(fuse_dirents_t *d_,
   return d;
 }
 
+static
+void
+fuse_dirents_fill_attr(fuse_attr_t       *attr_,
+                       const struct stat *st_)
+{
+  attr_->ino       = st_->st_ino;
+  attr_->size      = st_->st_size;
+  attr_->blocks    = st_->st_blocks;
+  attr_->atime     = st_->st_atime;
+  attr_->mtime     = st_->st_mtime;
+  attr_->ctime     = st_->st_ctime;
+  attr_->atimensec = ST_ATIM_NSEC(st_);
+  attr_->mtimensec = ST_MTIM_NSEC(st_);
+  attr_->ctimensec = ST_CTIM_NSEC(st_);
+  attr_->mode      = st_->st_mode;
+  attr_->nlink     = st_->st_nlink;
+  attr_->uid       = st_->st_uid;
+  attr_->gid       = st_->st_gid;
+  attr_->rdev      = st_->st_rdev;
+  attr_->blksize   = st_->st_blksize;
+}
+
 int
 fuse_dirents_add(fuse_dirents_t *d_,
                  struct dirent  *dirent_)
@@ -89,6 +106,15 @@ fuse_dirents_add(fuse_dirents_t *d_,
   d->type    = dirent_->d_type;
   memcpy(d->name,dirent_->d_name,namelen);
 
+  return 0;
+}
+
+int
+fuse_dirents_add_plus(fuse_dirents_t      *d_,
+                      const struct dirent *dirent_,
+                      const fuse_entry_t  *entry_,
+                      const struct stat   *st_)
+{
   return 0;
 }
 
