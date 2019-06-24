@@ -111,6 +111,6 @@ namespace FUSE
 
     return l::readdir(config.branches,
                       di->fusepath.c_str(),
-                      (fuse_dirents_t*)buf_);
+                      buf_);
   }
 }
