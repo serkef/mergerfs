@@ -3495,8 +3495,13 @@ static int readdir_fill(struct fuse *f, fuse_req_t req, fuse_ino_t ino,
 	return err;
 }
 
-static void fuse_lib_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
-			     off_t off, struct fuse_file_info *llfi)
+static
+void
+fuse_lib_readdir(fuse_req_t req,
+                 fuse_ino_t ino,
+                 size_t size,
+                 off_t off,
+                 struct fuse_file_info *llfi)
 {
   int rv;
   struct fuse *f = req_fuse_prepare(req);
