@@ -1,9 +1,10 @@
 #define _FILE_OFFSET_BITS 64
 
 #include "fuse_attr.h"
-#include "fuse_entry.h"
 #include "fuse_dirent.h"
+#include "fuse_direntplus.h"
 #include "fuse_dirents.h"
+#include "fuse_entry.h"
 #include "stat_utils.h"
 
 #include <dirent.h>
@@ -14,8 +15,6 @@
 #include <string.h>
 
 #define DEFAULT_SIZE 4096
-
-typedef struct fuse_direntplus fuse_direntplus_t;
 
 static
 uint64_t
@@ -115,6 +114,12 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
                       const fuse_entry_t  *entry_,
                       const struct stat   *st_)
 {
+  uint64_t size;
+  uint64_t namelen;
+  fuse_direntplus_t *d;
+
+
+
   return 0;
 }
 
