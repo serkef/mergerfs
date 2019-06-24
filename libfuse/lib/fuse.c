@@ -191,7 +191,6 @@ struct fuse_dh {
 	unsigned len;
 	unsigned size;
 	unsigned needlen;
-	int filled;
 	uint64_t fh;
 	int error;
 	fuse_ino_t nodeid;
@@ -3343,7 +3342,6 @@ static void fuse_lib_opendir(fuse_req_t req, fuse_ino_t ino,
 	dh->fuse = f;
 	dh->contents = NULL;
 	dh->len = 0;
-	dh->filled = 0;
 	dh->nodeid = ino;
         fuse_dirents_init(&dh->d);
 	fuse_mutex_init(&dh->lock);
@@ -3434,7 +3432,6 @@ static int fill_dir(void *dh_, const char *name, const struct stat *statp,
 		if (extend_contents(dh, dh->needlen) == -1)
 			return 1;
 
-		dh->filled = 0;
 		newlen = dh->len +
 			fuse_add_direntry(dh->req, dh->contents + dh->len,
 					  dh->needlen - dh->len, name,
@@ -3480,7 +3477,6 @@ static int readdir_fill(struct fuse *f, fuse_req_t req, fuse_ino_t ino,
 		dh->len = 0;
 		dh->error = 0;
 		dh->needlen = size;
-		dh->filled = 1;
 		dh->req = req;
 		fuse_prepare_interrupt(f, req, &d);
 		err = fuse_fs_readdir(f->fs, path, &dh->d, fill_dir, off, fi);
@@ -3488,8 +3484,6 @@ static int readdir_fill(struct fuse *f, fuse_req_t req, fuse_ino_t ino,
 		dh->req = NULL;
 		if (!err)
 			err = dh->error;
-		if (err)
-			dh->filled = 0;
 		free_path(f, ino, path);
 	}
 	return err;
