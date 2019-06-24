@@ -37,5 +37,16 @@ namespace fs
       else
         st_->st_ino |= ((uint64_t)st_->st_dev << 32);
     }
+
+    inline
+    ino_t
+    recompute(ino_t ino_,
+              dev_t dev_)
+    {
+      if(sizeof(ino_t) == 4)
+        return (ino_ | ((ino_t)dev_ << 16));
+
+      return (ino_ | ((ino_t)dev_ << 32));
+    }
   }
 }

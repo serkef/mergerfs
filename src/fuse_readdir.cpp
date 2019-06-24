@@ -50,9 +50,9 @@ namespace l
           const char     *dirname_,
           fuse_dirents_t *buf_)
   {
+    dev_t dev;
     HashSet names;
     string basepath;
-    struct stat st = {0};
 
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
@@ -66,10 +66,10 @@ namespace l
         if(!dh)
           continue;
 
-        dirfd     = fs::dirfd(dh);
-        st.st_dev = fs::devid(dirfd);
-        if(st.st_dev == (dev_t)-1)
-          st.st_dev = i;
+        dirfd = fs::dirfd(dh);
+        dev   = fs::devid(dirfd);
+        if(dev == (dev_t)-1)
+          dev = i;
 
         rv = 0;
         for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
@@ -78,10 +78,7 @@ namespace l
             if(rv == 0)
               continue;
 
-            st.st_ino  = de->d_ino;
-            st.st_mode = DTTOIF(de->d_type);
-
-            fs::inode::recompute(&st);
+            de->d_ino = fs::inode::recompute(de->d_ino,dev);
 
             rv = fuse_dirents_add(buf_,de);
             if(rv)
