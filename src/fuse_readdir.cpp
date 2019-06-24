@@ -83,7 +83,7 @@ namespace l
 
             fs::inode::recompute(&st);
 
-            rv = ::fuse_dirents_add(buf_,de);
+            rv = fuse_dirents_add(buf_,de);
             if(rv)
               return (fs::closedir(dh),-ENOMEM);
           }
