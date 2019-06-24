@@ -25,9 +25,8 @@
 namespace FUSE
 {
   int
-  readdir(const char      *fusepath_,
-          void            *buf_,
-          fuse_fill_dir_t  filler_,
-          off_t            offset_,
-          fuse_file_info  *ffi_);
+  readdir(const char     *fusepath_,
+          fuse_dirents_t *buf_,
+          off_t           offset_,
+          fuse_file_info *ffi_);
 }

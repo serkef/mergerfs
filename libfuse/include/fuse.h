@@ -24,6 +24,7 @@
 #endif
 
 #include "fuse_common.h"
+#include "fuse_dirents.h"
 
 #include <fcntl.h>
 #include <time.h>
@@ -46,22 +47,6 @@ struct fuse;
 
 /** Structure containing a raw command */
 struct fuse_cmd;
-
-/** Function to add an entry in a readdir() operation
- *
- * @param buf the buffer passed to the readdir() operation
- * @param name the file name of the directory entry
- * @param stat file attributes, can be NULL
- * @param off offset of the next entry or zero
- * @return 1 if buffer is full, zero otherwise
- */
-typedef int (*fuse_fill_dir_t) (void *buf, const char *name,
-				const struct stat *stbuf, off_t off);
-
-/* Used by deprecated getdir() method */
-typedef struct fuse_dirhandle *fuse_dirh_t;
-typedef int (*fuse_dirfil_t) (fuse_dirh_t h, const char *name, int type,
-			      ino_t ino);
 
 /**
  * The file system operations:
@@ -103,9 +88,6 @@ struct fuse_operations {
 	 * for success.
 	 */
 	int (*readlink) (const char *, char *, size_t);
-
-	/* Deprecated, use readdir() instead */
-	int (*getdir) (const char *, fuse_dirh_t, fuse_dirfil_t);
 
 	/** Create a file node
 	 *
@@ -312,12 +294,11 @@ struct fuse_operations {
 	 *
 	 * Introduced in version 2.3
 	 */
-	int (*readdir) (const char *, void *, fuse_fill_dir_t, off_t,
+	int (*readdir)(const char *, fuse_dirents_t *, off_t,
 			struct fuse_file_info *);
 
 	int (*readdir_plus)(const char *,
-                            void *,
-                            fuse_fill_dir_t,
+                            fuse_dirents_t *,
                             off_t,
                             struct fuse_file_info *);
 
@@ -904,8 +885,10 @@ int fuse_fs_flush(struct fuse_fs *fs, const char *path,
 int fuse_fs_statfs(struct fuse_fs *fs, const char *path, struct statvfs *buf);
 int fuse_fs_opendir(struct fuse_fs *fs, const char *path,
 		    struct fuse_file_info *fi);
-int fuse_fs_readdir(struct fuse_fs *fs, const char *path, void *buf,
-		    fuse_fill_dir_t filler, off_t off,
+int fuse_fs_readdir(struct fuse_fs *fs,
+                    const char *path,
+                    fuse_dirents_t *buf,
+		    off_t off,
 		    struct fuse_file_info *fi);
 int fuse_fs_fsyncdir(struct fuse_fs *fs, const char *path, int datasync,
 		     struct fuse_file_info *fi);

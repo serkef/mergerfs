@@ -102,7 +102,6 @@ namespace l
     ops.ftruncate       = FUSE::ftruncate;
     ops.futimens        = FUSE::futimens;
     ops.getattr         = FUSE::getattr;
-    ops.getdir          = NULL; /* deprecated; use readdir */
     ops.getxattr        = FUSE::getxattr;
     ops.init            = FUSE::init;
     ops.ioctl           = FUSE::ioctl;

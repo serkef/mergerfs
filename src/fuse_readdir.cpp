@@ -46,10 +46,9 @@ namespace l
 {
   static
   int
-  readdir(const Branches        &branches_,
-          const char            *dirname_,
-          void                  *buf_,
-          const fuse_fill_dir_t  filler_)
+  readdir(const Branches &branches_,
+          const char     *dirname_,
+          fuse_dirents_t *buf_)
   {
     HashSet names;
     string basepath;
@@ -84,9 +83,7 @@ namespace l
 
             fs::inode::recompute(&st);
 
-            rv = ::fuse_dirents_add((fuse_dirents_t*)buf_,de);
-
-            //rv = filler_(buf_,de->d_name,&st,NO_OFFSET);
+            rv = ::fuse_dirents_add(buf_,de);
             if(rv)
               return (fs::closedir(dh),-ENOMEM);
           }
@@ -102,8 +99,7 @@ namespace FUSE
 {
   int
   readdir(const char      *fusepath_,
-          void            *buf_,
-          fuse_fill_dir_t  filler_,
+          fuse_dirents_t  *buf_,
           off_t            offset_,
           fuse_file_info  *ffi_)
   {
@@ -115,7 +111,6 @@ namespace FUSE
 
     return l::readdir(config.branches,
                       di->fusepath.c_str(),
-                      buf_,
-                      filler_);
+                      (fuse_dirents_t*)buf_);
   }
 }
