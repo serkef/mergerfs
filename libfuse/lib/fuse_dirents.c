@@ -44,7 +44,7 @@ fuse_dirents_resize(fuse_dirents_t *d_,
 }
 
 static
-fuse_dirent_t*
+void*
 fuse_dirents_alloc(fuse_dirents_t *d_,
                    uint64_t        size_)
 {
@@ -118,7 +118,22 @@ fuse_dirents_add_plus(fuse_dirents_t      *d_,
   uint64_t namelen;
   fuse_direntplus_t *d;
 
+  namelen = _D_EXACT_NAMLEN(dirent_);
+  size = align_uint64_t(sizeof(fuse_direntplus_t) + namelen);
 
+  d = fuse_dirents_alloc(d_,size);
+  if(d == NULL)
+    return -ENOMEM;
+
+  d->dirent.ino     = dirent_->d_ino;
+  d->dirent.off     = d_->data_len;
+  d->dirent.namelen = namelen;
+  d->dirent.type    = dirent_->d_type;
+  memcpy(d->dirent.name,dirent_->d_name,namelen);
+
+  d->entry = *entry_;
+
+  fuse_dirents_fill_attr(&d->attr,st_);
 
   return 0;
 }
