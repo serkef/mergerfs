@@ -63,8 +63,6 @@ struct fuse_config {
 	int remember;
 	int nopath;
 	int debug;
-	int use_ino;
-	int readdir_ino;
 	int set_mode;
 	int set_uid;
 	int set_gid;
@@ -1265,8 +1263,6 @@ out:
 
 static void set_stat(struct fuse *f, fuse_ino_t nodeid, struct stat *stbuf)
 {
-	if (!f->conf.use_ino)
-		stbuf->st_ino = nodeid;
 	if (f->conf.set_mode)
 		stbuf->st_mode = (stbuf->st_mode & S_IFMT) |
 				 (0777 & ~f->conf.umask);
@@ -4351,8 +4347,6 @@ static const struct fuse_opt fuse_lib_opts[] = {
 	FUSE_OPT_KEY("-d",		      FUSE_OPT_KEY_KEEP),
 	FUSE_LIB_OPT("debug",		      debug, 1),
 	FUSE_LIB_OPT("-d",		      debug, 1),
-	FUSE_LIB_OPT("use_ino",		      use_ino, 1),
-	FUSE_LIB_OPT("readdir_ino",	      readdir_ino, 1),
 	FUSE_LIB_OPT("umask=",		      set_mode, 1),
 	FUSE_LIB_OPT("umask=%o",	      umask, 0),
 	FUSE_LIB_OPT("uid=",		      set_uid, 1),
@@ -4374,8 +4368,6 @@ static const struct fuse_opt fuse_lib_opts[] = {
 static void fuse_lib_help(void)
 {
 	fprintf(stderr,
-"    -o use_ino             let filesystem set inode numbers\n"
-"    -o readdir_ino         try to fill in d_ino in readdir\n"
 "    -o umask=M             set file permissions (octal)\n"
 "    -o uid=N               set file owner\n"
 "    -o gid=N               set file group\n"
@@ -4561,14 +4553,6 @@ struct fuse *fuse_new_common(struct fuse_chan *ch, struct fuse_args *args,
 	if (fuse_opt_parse(args, &f->conf, fuse_lib_opts,
 			   fuse_lib_opt_proc) == -1)
 		goto out_free_fs;
-
-#if defined(__FreeBSD__) || defined(__NetBSD__)
-	/*
-	 * In FreeBSD, we always use these settings as inode numbers
-	 * are needed to make getcwd(3) work.
-	 */
-	f->conf.readdir_ino = 1;
-#endif
 
 	if (compat && compat <= 25) {
 		if (fuse_sync_compat_args(args) == -1)

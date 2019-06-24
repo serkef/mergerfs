@@ -308,6 +308,10 @@ parse_and_process_arg(Config            &config,
     return 0;
   else if(arg == "big_writes")
     return 0;
+  else if(arg == "use_ino")
+    return 0;
+  else if(arg == "readdir_ino")
+    return 0;
 
   return 1;
 }
